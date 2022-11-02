@@ -10,7 +10,7 @@ docker compose up -d
 
 ## Configuration
 
-The configuration files for the otel collector, jaeger and prometheus instances are located at [/config](https://github.com/juanjoss/shorturl-plus-qrgen/config).
+The configuration files for the otel collector, jaeger and prometheus instances are located at [/config](https://github.com/juanjoss/shorturl-plus-qrgen/tree/master/config).
 
 ### qrgen
 
