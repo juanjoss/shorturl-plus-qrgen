@@ -1,0 +1,79 @@
+version: '3'
+
+services:
+  shorturl:
+    container_name: shorturl
+    hostname: shorturl
+    image: jujoss/shorturl:latest
+    depends_on:
+      - redis
+    environment:
+      APP_PORT: 4000
+      QRGEN_GRPC_SERVER_PORT: 5001
+      REDIS_PORT: 6379
+      GRPC_OTEL_COLLECTOR: otel:4317
+    ports:
+      - 4000:4000
+    restart: always
+
+  qrgen:
+    container_name: qrgen
+    hostname: qrgen
+    image: jujoss/qrgen:latest
+    environment:
+      HTTP_METRICS_PORT: 5000
+      GRPC_SERVER_PORT: 5001
+      GRPC_OTEL_COLLECTOR: otel:4317
+    expose:
+      - 5001
+    ports:
+      - 5000:5000
+    restart: always
+
+  redis:
+    image: redis
+    container_name: redis
+    hostname: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  prometheus:
+    container_name: prometheus
+    hostname: prometheus
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus_data:/etc/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yaml 
+
+  jaeger:
+    container_name: jaeger
+    hostname: jaeger
+    image: jaegertracing/all-in-one:1.29.0
+    ports:
+      - 16686:16686 # UI
+      - 14250:14250 # write traces
+
+  otel:
+    container_name: otel
+    hostname: otel
+    image: otel/opentelemetry-collector
+    depends_on:
+      - jaeger
+    ports:
+      - 4317:4317   # OTLP gRPC receiver
+      - 4318:4318   # OTLP http receiver
+      - 13133:13133 # health_check extension
+    volumes:
+      - ./config/otel.yaml:/etc/otel/otel.yaml
+      - otel_data:/etc/otel
+    command: --config /etc/otel/otel.yaml
+
+volumes:
+  prometheus_data: {}
+  otel_data: {}
